@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News24 app</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+            margin: 0;
+        }
+        
+        h1 {
+            color: #007bff;
+            margin-bottom: 30px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .form-group label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-control {
+            border-radius: 0.5rem;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+        }
+
+        #genre-select, #sort-select, #from-date, #to-date {
+            background-color: #ffffff;
+            color: #333;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 0.25rem;
+            transition: all 0.3s ease;
+        }
+
+        #genre-select:focus, #sort-select:focus, #from-date:focus, #to-date:focus {
+            border-color: #007bff;
+            box-shadow: 0px 0px 5px rgba(0, 123, 255, 0.3);
+            outline: none;
+        }
+
+        #load-more {
+            background-color: #007bff;
+            color: #fff;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 0.5rem;
+            border: none;
+            box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+            cursor: pointer;
+        }
+
+        #load-more:hover {
+            background-color: #0056b3;
+        }
+
+        .card {
+            border-radius: 0.75rem;
+            box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .card-text {
+            color: #666;
+            font-size: 0.95rem;
+            height: 80px;
+            overflow: hidden;
+        }
+
+        .card-body {
+            padding: 15px;
+        }
+
+        .card a.btn {
+            background-color: #007bff;
+            color: #fff;
+            font-weight: bold;
+            padding: 8px 16px;
+            border-radius: 0.5rem;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+            display: inline-block;
+        }
+
+        .card a.btn:hover {
+            background-color: #0056b3;
+            text-decoration: none;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .row {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 class="text-center">News24 app</h1>
+    
+    <div class="form-group">
+        <label for="genre-select">Select Genre:</label>
+        <select id="genre-select" class="form-control">
+            <option value="technology">Technology</option>
+            <option value="sports">Sports</option>
+            <option value="health">Health</option>
+            <option value="business">Business</option>
+            <option value="entertainment">Entertainment</option>
+            <option value="science">Science</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="date-select">Select Date Range:</label>
+        <input type="date" id="from-date" class="form-control" placeholder="From Date">
+        <input type="date" id="to-date" class="form-control mt-2" placeholder="To Date">
+    </div>
+
+    <div class="form-group">
+        <label for="sort-select">Sort By:</label>
+        <select id="sort-select" class="form-control">
+            <option value="popularity">Popularity</option>
+            <option value="publishedAt">Date</option>
+            <option value="relevancy">Relevancy</option>
+        </select>
+    </div>
+
+    <div class="row" id="news-container"></div>
+    <div class="text-center">
+        <button id="load-more" class="btn btn-primary mt-4">Load More</button>
+    </div>
+</div>
+
+<script>
+    const apiKey = 'e6dd11b8e21649d5aba9c7e8efc35910';
+    let currentPage = 1;
+    const pageSize = 10; 
+    let totalArticles = [];
+
+    const fetchNews = async (page, genre, fromDate, toDate, sortBy) => {
+        let url = `https://newsapi.org/v2/everything?q=${genre}&pageSize=${pageSize}&page=${page}&sortBy=${sortBy}&language=en&apiKey=${apiKey}`;
+
+        if (fromDate) {
+            url += `&from=${fromDate}`;
+        }
+        if (toDate) {
+            url += `&to=${toDate}`;
+        }
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            const data = await response.json();
+            totalArticles = totalArticles.concat(data.articles);
+            displayNews(totalArticles);
+        } catch (error) {
+            console.error('Fetch error: ', error);
+        }
+    };
+
+    const displayNews = (articles) => {
+        const newsContainer = document.getElementById('news-container');
+        newsContainer.innerHTML = ''; 
+
+        articles.forEach(article => {
+            if (article.urlToImage) {
+                const card = `
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <img src="${article.urlToImage}" class="card-img-top" alt="${article.title}">
+                            <div class="card-body">
+                                <h5 class="card-title">${article.title}</h5>
+                                <p class="card-text">${article.description || 'No description available.'}</p>
+                                <a href="${article.url}" target="_blank" class="btn btn-primary">Read More</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                newsContainer.innerHTML += card;
+            }
+        });
+    };
+
+    document.getElementById('load-more').addEventListener('click', () => {
+        const genre = document.getElementById('genre-select').value;
+        const fromDate = document.getElementById('from-date').value;
+        const toDate = document.getElementById('to-date').value;
+        const sortBy = document.getElementById('sort-select').value;
+
+        currentPage++;
+        fetchNews(currentPage, genre, fromDate, toDate, sortBy);
+    });
+
+    document.querySelectorAll('#genre-select, #from-date, #to-date, #sort-select').forEach((element) => {
+        element.addEventListener('change', () => {
+            currentPage = 1; 
+            totalArticles = []; 
+            const genre = document.getElementById('genre-select').value;
+            const fromDate = document.getElementById('from-date').value;
+            const toDate = document.getElementById('to-date').value;
+            const sortBy = document.getElementById('sort-select').value;
+
+            fetchNews(currentPage, genre, fromDate, toDate, sortBy);
+        });
+    });
+
+    const initialGenre = document.getElementById('genre-select').value;
+    fetchNews(currentPage, initialGenre, '', '', 'popularity');
+</script>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
